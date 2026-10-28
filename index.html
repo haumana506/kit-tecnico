@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kit Técnico</title>
+    <script>
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        display: ['"Space Grotesk"', 'system-ui', 'sans-serif'],
+                        mono: ['"IBM Plex Mono"', 'ui-monospace', 'monospace']
+                    }
+                }
+            }
+        };
+    </script>
+
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.directive('decimal', (el) => {
+                el.addEventListener('input', (e) => {
+                    const input = e.target;
+                    let value = input.value;
+                    let cursor = input.selectionStart ?? value.length;
+                    let changed = false;
+                    if (value.includes(',')) { value = value.replace(/,/g, '.'); changed = true; }
+                    if (value.startsWith('.')) { value = '0' + value; cursor += 1; changed = true; }
+                    if (changed) {
+                        input.value = value;
+                        try { input.setSelectionRange(cursor, cursor); } catch (_) {}
+                        input.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                });
+            });
+        });
+    </script>
+
+    <script>
+        const I = (c) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="100%" height="100%">${c}</svg>`;
+        window.FIGURAS = [
+            { id: 'rectangulo',   nombre: 'Rectángulo',        grupo: 'area',    icon: I('<rect x="3" y="6" width="18" height="12" rx="1"/>') },
+            { id: 'cuadrado',     nombre: 'Cuadrado',          grupo: 'area',    icon: I('<rect x="5" y="5" width="14" height="14" rx="1"/>') },
+            { id: 'triangulo_bh', nombre: 'Triángulo B×A',     grupo: 'area',    icon: I('<path d="M3 20 L21 20 L12 4 Z"/><path d="M12 20 L12 12" stroke-dasharray="2 2" opacity="0.6"/>') },
+            { id: 'triangulo_3l', nombre: 'Triángulo 3 lados', grupo: 'area',    icon: I('<path d="M3 20 L21 20 L12 4 Z"/><circle cx="3" cy="20" r="1.4" fill="currentColor"/><circle cx="21" cy="20" r="1.4" fill="currentColor"/><circle cx="12" cy="4" r="1.4" fill="currentColor"/>') },
+            { id: 'circulo',      nombre: 'Círculo',           grupo: 'area',    icon: I('<circle cx="12" cy="12" r="8"/>') },
+            { id: 'elipse',       nombre: 'Elipse',            grupo: 'area',    icon: I('<ellipse cx="12" cy="12" rx="9" ry="5"/>') },
+            { id: 'trapecio',     nombre: 'Trapecio',          grupo: 'area',    icon: I('<path d="M5 19 L19 19 L16 5 L8 5 Z"/>') },
+            { id: 'rombo',        nombre: 'Rombo',             grupo: 'area',    icon: I('<path d="M12 3 L21 12 L12 21 L3 12 Z"/>') },
+            { id: 'romboide',     nombre: 'Romboide',          grupo: 'area',    icon: I('<path d="M6 5 L21 5 L18 19 L3 19 Z"/>') },
+            { id: 'poligono',     nombre: 'Polígono regular',  grupo: 'area',    icon: I('<path d="M12 3 L20 7.5 L20 16.5 L12 21 L4 16.5 L4 7.5 Z"/>') },
+            { id: 'sector',       nombre: 'Sector circular',   grupo: 'area',    icon: I('<path d="M12 12 L12 3 A9 9 0 0 1 20 17 Z"/>') },
+            { id: 'corona',       nombre: 'Corona circular',   grupo: 'area',    icon: I('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/>') },
+            { id: 'prisma',       nombre: 'Prisma',            grupo: 'volumen', icon: I('<path d="M6 7 L12 4 L18 7 L18 16 L12 19 L6 16 Z"/><path d="M6 7 L12 10 L18 7 M12 10 L12 19"/>') },
+            { id: 'cilindro',     nombre: 'Cilindro',          grupo: 'volumen', icon: I('<path d="M5 6 L5 18 A7 2.5 0 0 0 19 18 L19 6"/><ellipse cx="12" cy="6" rx="7" ry="2.5"/>') },
+            { id: 'cono',         nombre: 'Cono',              grupo: 'volumen', icon: I('<path d="M12 3 L5 18"/><path d="M12 3 L19 18"/><path d="M5 18 A7 2.5 0 0 0 19 18"/>') },
+            { id: 'esfera',       nombre: 'Esfera',            grupo: 'volumen', icon: I('<circle cx="12" cy="12" r="8"/><ellipse cx="12" cy="12" rx="8" ry="3" opacity="0.55"/>') },
+            { id: 'piramide',     nombre: 'Pirámide',          grupo: 'volumen', icon: I('<path d="M12 3 L3 15 M12 3 L21 15 M12 3 L12 21 M3 15 L12 21 M21 15 L12 21"/><path d="M12 3 L12 11 M3 15 L12 11 M21 15 L12 11" stroke-dasharray="2 2" opacity="0.5"/>') }
+        ];
+    </script>
+
+    <style>
+        .field-label { display: block; font-size: 0.7rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.4rem; }
+        .field-input { width: 100%; padding: 0.625rem 0.875rem; border: 1px solid #e2e8f0; border-radius: 0.625rem; background: #fff; color: #1e293b; font-size: 0.95rem; transition: all 0.15s; }
+        .field-input:hover { border-color: #cbd5e1; }
+        .field-input:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 4px rgba(99,102,241,0.12); }
+        .field-hint { font-size: 0.68rem; color: #94a3b8; margin-top: 0.3rem; line-height: 1.35; }
+        .dark .field-label { color: #94a3b8; }
+        .dark .field-input { background: #0f172a; border-color: #334155; color: #e2e8f0; }
+        .dark .field-input:hover { border-color: #475569; }
+        .dark .field-input:focus { border-color: #818cf8; box-shadow: 0 0 0 4px rgba(129,140,248,0.15); }
+        .dark .field-hint { color: #64748b; }
+        [x-cloak] { display: none !important; }
+        .shape-btn { transition: all 0.15s ease; }
+        .shape-btn:active { transform: scale(0.97); }
+    </style>
+</head>
+<body class="font-sans min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-indigo-50/40 to-purple-50/30 dark:from-slate-950 dark:via-indigo-950/40 dark:to-purple-950/20 text-slate-800 dark:text-slate-200 antialiased"
+    x-data="{
+        tab: 'areas',
+        dark: document.documentElement.classList.contains('dark'),
+        toggleDark() {
+            this.dark = !this.dark;
+            document.documentElement.classList.toggle('dark', this.dark);
+            localStorage.theme = this.dark ? 'dark' : 'light';
+        }
+    }">
+
+    <div class="max-w-6xl mx-auto w-full px-4 py-6 md:py-10 flex-1">
+
+        <!-- Header sin subtítulo -->
+        <header class="mb-10 flex items-start justify-between gap-4">
+            <div class="flex items-start gap-5 min-w-0">
+                <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 flex items-center justify-center shadow-lg shadow-slate-950/25 shrink-0 ring-1 ring-white/10">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-9 h-9">
+                        <path d="M12 12 L21 12" /><path d="M18 9 L21 12 L18 15" />
+                        <path d="M12 12 L12 3" /><path d="M9 6 L12 3 L15 6" />
+                        <path d="M12 12 L4 18" /><path d="M4 15 L4 18 L7 17" />
+                        <circle cx="12" cy="12" r="1" fill="white" stroke="none" />
+                    </svg>
+                </div>
+                <div class="min-w-0">
+                    <p class="font-mono text-[10px] font-medium uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400 mb-2">Dibujo y modelado</p>
+                    <h1 class="font-display text-4xl md:text-5xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight">Kit Técnico</h1>
+                </div>
+            </div>
+            <button @click="toggleDark()"
+                :aria-label="dark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+                class="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-700 shadow-sm transition-colors shrink-0">
+                <svg x-show="!dark" class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+                <svg x-show="dark" x-cloak class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path stroke-linecap="round" d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+            </button>
+        </header>
+
+        <!-- Pestañas -->
+        <nav class="inline-flex flex-wrap gap-1 mb-6 p-1.5 bg-white/70 dark:bg-slate-900/70 backdrop-blur rounded-2xl shadow-sm border border-slate-200/70 dark:border-slate-700/70">
+            <button @click="tab = 'areas'" :class="tab === 'areas' ? 'bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-md shadow-indigo-500/30' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-800/80'" class="px-4 py-2 rounded-xl font-semibold text-sm transition-all">Áreas y Volúmenes</button>
+            <button @click="tab = 'escalas'" :class="tab === 'escalas' ? 'bg-gradient-to-br from-violet-500 to-violet-600 text-white shadow-md shadow-violet-500/30' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-800/80'" class="px-4 py-2 rounded-xl font-semibold text-sm transition-all">Escalas</button>
+            <button @click="tab = 'pendientes'" :class="tab === 'pendientes' ? 'bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/30' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-800/80'" class="px-4 py-2 rounded-xl font-semibold text-sm transition-all">Pendientes</button>
+            <button @click="tab = 'iluminacion'" :class="tab === 'iluminacion' ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/30' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-800/80'" class="px-4 py-2 rounded-xl font-semibold text-sm transition-all">Iluminación</button>
+            <button @click="tab = 'materiales'" :class="tab === 'materiales' ? 'bg-gradient-to-br from-rose-500 to-pink-600 text-white shadow-md shadow-rose-500/30' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-800/80'" class="px-4 py-2 rounded-xl font-semibold text-sm transition-all">Materiales</button>
+            <button @click="tab = 'unidades'" :class="tab === 'unidades' ? 'bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-md shadow-cyan-500/30' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-800/80'" class="px-4 py-2 rounded-xl font-semibold text-sm transition-all">Unidades</button>
+        </nav>
+
+        <main>
+            <!-- ===================== ÁREAS Y VOLÚMENES ===================== -->
+            <section x-show="tab === 'areas'" x-cloak
+                class="bg-white/80 dark:bg-slate-900/70 backdrop-blur rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-black/30 border border-slate-200/60 dark:border-slate-700/60 p-5 md:p-8"
+                x-data="{
+                    figuras: window.FIGURAS,
+                    get figurasAreas() { return this.figuras.filter(f => f.grupo === 'area'); },
+                    get figurasVolumenes() { return this.figuras.filter(f => f.grupo === 'volumen'); },
+                    shape: 'rectangulo',
+                    rect: { ancho: 0, alto: 0 }, cuad: { lado: 0 }, triBh: { base: 0, altura: 0 }, tri3l: { a: 0, b: 0, c: 0 },
+                    circ: { radio: 0 }, elip: { a: 0, b: 0 }, trap: { B: 0, b: 0, h: 0 }, rombo: { D: 0, d: 0 },
+                    romboide: { base: 0, altura: 0 }, poli: { n: 6, lado: 0 }, sector: { radio: 0, angulo: 0 },
+                    corona: { R: 0, r: 0 }, prisma: { a: 0, b: 0, c: 0 }, cilindro: { radio: 0, altura: 0 },
+                    cono: { radio: 0, altura: 0 }, esfera: { radio: 0 }, piramide: { lado: 0, altura: 0 },
+                    get resultados() {
+                        const N = v => parseFloat(v) || 0;
+                        const PI = Math.PI;
+                        const out = { area: 0, perimetro: 0, volumen: 0, extra: '' };
+                        switch (this.shape) {
+                            case 'rectangulo': out.area = N(this.rect.ancho) * N(this.rect.alto); out.perimetro = 2 * (N(this.rect.ancho) + N(this.rect.alto)); break;
+                            case 'cuadrado': { const l = N(this.cuad.lado); out.area = l*l; out.perimetro = 4*l; break; }
+                            case 'triangulo_bh': out.area = (N(this.triBh.base) * N(this.triBh.altura)) / 2; break;
+                            case 'triangulo_3l': { const a = N(this.tri3l.a), b = N(this.tri3l.b), c = N(this.tri3l.c); const s = (a+b+c)/2, val = s*(s-a)*(s-b)*(s-c); out.area = val > 0 ? Math.sqrt(val) : 0; out.perimetro = a+b+c; break; }
+                            case 'circulo': { const r = N(this.circ.radio); out.area = PI*r*r; out.perimetro = 2*PI*r; break; }
+                            case 'elipse': { const a = N(this.elip.a), b = N(this.elip.b); out.area = PI*a*b; out.perimetro = PI*(3*(a+b) - Math.sqrt((3*a+b)*(a+3*b))); break; }
+                            case 'trapecio': out.area = ((N(this.trap.B) + N(this.trap.b))/2) * N(this.trap.h); break;
+                            case 'rombo': { const D = N(this.rombo.D), d = N(this.rombo.d); out.area = (D*d)/2; out.perimetro = 4*Math.sqrt((D/2)**2 + (d/2)**2); break; }
+                            case 'romboide': out.area = N(this.romboide.base) * N(this.romboide.altura); break;
+                            case 'poligono': { const n = N(this.poli.n), lado = N(this.poli.lado); if (n >= 3 && lado > 0) { const ap = lado/(2*Math.tan(PI/n)); out.area = (n*lado*ap)/2; out.perimetro = n*lado; out.extra = 'Apotema: ' + ap.toFixed(4) + ' m'; } break; }
+                            case 'sector': { const r = N(this.sector.radio), ang = N(this.sector.angulo); const arco = 2*PI*r*(ang/360); out.area = PI*r*r*(ang/360); out.perimetro = 2*r + arco; out.extra = 'Longitud de arco: ' + arco.toFixed(4) + ' m'; break; }
+                            case 'corona': { const R = N(this.corona.R), r = N(this.corona.r); out.area = PI*(R*R - r*r); out.extra = 'Perímetro ext.: ' + (2*PI*R).toFixed(4) + ' m · int.: ' + (2*PI*r).toFixed(4) + ' m'; break; }
+                            case 'prisma': { const a = N(this.prisma.a), b = N(this.prisma.b), c = N(this.prisma.c); out.volumen = a*b*c; out.extra = 'Superficie total: ' + (2*(a*b + a*c + b*c)).toFixed(4) + ' m²'; break; }
+                            case 'cilindro': { const r = N(this.cilindro.radio), h = N(this.cilindro.altura); out.volumen = PI*r*r*h; out.extra = 'Área lateral: ' + (2*PI*r*h).toFixed(4) + ' m² · Área total: ' + (2*PI*r*(r+h)).toFixed(4) + ' m²'; break; }
+                            case 'cono': { const r = N(this.cono.radio), h = N(this.cono.altura); const g = Math.sqrt(r*r + h*h); out.volumen = (PI*r*r*h)/3; out.extra = 'Generatriz: ' + g.toFixed(4) + ' m · Área lateral: ' + (PI*r*g).toFixed(4) + ' m² · Área total: ' + (PI*r*(r+g)).toFixed(4) + ' m²'; break; }
+                            case 'esfera': { const r = N(this.esfera.radio); out.volumen = (4/3)*PI*r*r*r; out.extra = 'Superficie: ' + (4*PI*r*r).toFixed(4) + ' m²'; break; }
+                            case 'piramide': { const l = N(this.piramide.lado), h = N(this.piramide.altura); out.volumen = (l*l*h)/3; out.extra = 'Apotema de la pirámide: ' + Math.sqrt((l/2)**2 + h*h).toFixed(4) + ' m'; break; }
+                        }
+                        return out;
+                    },
+                    get hasResult() { const r = this.resultados; return r.area > 0 || r.volumen > 0 || r.perimetro > 0; }
+                }">
+
+                <h2 class="text-xl font-bold mb-5 text-slate-800 dark:text-white">Calculadora de áreas y volúmenes</h2>
+
+                <div class="mb-5">
+                    <p class="field-label">Figuras planas</p>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                        <template x-for="f in figurasAreas" :key="f.id">
+                            <button @click="shape = f.id"
+                                :class="shape === f.id ? 'bg-gradient-to-br from-sky-500 to-blue-600 text-white shadow-md shadow-sky-500/30 border-transparent' : 'bg-sky-50 dark:bg-sky-950/40 text-sky-800 dark:text-sky-300 border-sky-200 dark:border-sky-800/50 hover:border-sky-400 dark:hover:border-sky-600 hover:bg-sky-100 dark:hover:bg-sky-900/60'"
+                                class="shape-btn flex items-center gap-2 px-3 py-2.5 rounded-xl border font-medium text-sm text-left">
+                                <span x-html="f.icon" class="shrink-0 w-5 h-5 inline-flex"></span>
+                                <span x-text="f.nombre" class="truncate"></span>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+
+                <div class="mb-5">
+                    <p class="field-label">Volúmenes</p>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                        <template x-for="f in figurasVolumenes" :key="f.id">
+                            <button @click="shape = f.id"
+                                :class="shape === f.id ? 'bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/30 border-transparent' : 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/50 hover:border-amber-400 dark:hover:border-amber-600 hover:bg-amber-100 dark:hover:bg-amber-900/60'"
+                                class="shape-btn flex items-center gap-2 px-3 py-2.5 rounded-xl border font-medium text-sm text-left">
+                                <span x-html="f.icon" class="shrink-0 w-5 h-5 inline-flex"></span>
+                                <span x-text="f.nombre" class="truncate"></span>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+
+                <div class="p-5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/20 border border-indigo-200/60 dark:border-indigo-800/40 space-y-4">
+                    <p class="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">Datos de entrada (metros)</p>
+                    <div x-show="shape === 'rectangulo'" x-cloak class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label class="field-label">Ancho (m)</label><input type="text" inputmode="decimal" x-model="rect.ancho" x-decimal class="field-input"><p class="field-hint">Lado horizontal del rectángulo.</p></div>
+                        <div><label class="field-label">Alto (m)</label><input type="text" inputmode="decimal" x-model="rect.alto" x-decimal class="field-input"><p class="field-hint">Lado vertical del rectángulo.</p></div>
+                    </div>
+                    <div x-show="shape === 'cuadrado'" x-cloak><label class="field-label">Lado (m)</label><input type="text" inputmode="decimal" x-model="cuad.lado" x-decimal class="field-input"><p class="field-hint">Longitud de un lado (todos son iguales).</p></div>
+                    <div x-show="shape === 'triangulo_bh'" x-cloak class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label class="field-label">Base (m)</label><input type="text" inputmode="decimal" x-model="triBh.base" x-decimal class="field-input"><p class="field-hint">Lado sobre el que "descansa" el triángulo.</p></div>
+                        <div><label class="field-label">Altura (m)</label><input type="text" inputmode="decimal" x-model="triBh.altura" x-decimal class="field-input"><p class="field-hint">Distancia perpendicular desde la base al vértice opuesto.</p></div>
+                    </div>
+                    <div x-show="shape === 'triangulo_3l'" x-cloak class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div><label class="field-label">Lado a (m)</label><input type="text" inputmode="decimal" x-model="tri3l.a" x-decimal class="field-input"></div>
+                        <div><label class="field-label">Lado b (m)</label><input type="text" inputmode="decimal" x-model="tri3l.b" x-decimal class="field-input"></div>
+                        <div><label class="field-label">Lado c (m)</label><input type="text" inputmode="decimal" x-model="tri3l.c" x-decimal class="field-input"><p class="field-hint">La suma de dos lados cualesquiera debe ser mayor que el tercero.</p></div>
+                    </div>
+                    <div x-show="shape === 'circulo'" x-cloak><label class="field-label">Radio (m)</label><input type="text" inputmode="decimal" x-model="circ.radio" x-decimal class="field-input"><p class="field-hint">Distancia del centro al borde del círculo.</p></div>
+                    <div x-show="shape === 'elipse'" x-cloak class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label class="field-label">Semieje mayor a (m)</label><input type="text" inputmode="decimal" x-model="elip.a" x-decimal class="field-input"><p class="field-hint">Del centro al borde horizontal (mitad del eje más largo).</p></div>
+                        <div><label class="field-label">Semieje menor b (m)</label><input type="text" inputmode="decimal" x-model="elip.b" x-decimal class="field-input"><p class="field-hint">Del centro al borde vertical (mitad del eje más corto).</p></div>
+                    </div>
+                    <div x-show="shape === 'trapecio'" x-cloak class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div><label class="field-label">Base mayor B (m)</label><input type="text" inputmode="decimal" x-model="trap.B" x-decimal class="field-input"><p class="field-hint">Lado paralelo más largo.</p></div>
+                        <div><label class="field-label">Base menor b (m)</label><input type="text" inputmode="decimal" x-model="trap.b" x-decimal class="field-input"><p class="field-hint">Lado paralelo más corto.</p></div>
+                        <div><label class="field-label">Altura h (m)</label><input type="text" inputmode="decimal" x-model="trap.h" x-decimal class="field-input"><p class="field-hint">Separación perpendicular entre las dos bases.</p></div>
+                    </div>
+                    <div x-show="shape === 'rombo'" x-cloak class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label class="field-label">Diagonal mayor D (m)</label><input type="text" inputmode="decimal" x-model="rombo.D" x-decimal class="field-input"><p class="field-hint">La diagonal más larga.</p></div>
+                        <div><label class="field-label">Diagonal menor d (m)</label><input type="text" inputmode="decimal" x-model="rombo.d" x-decimal class="field-input"><p class="field-hint">La diagonal más corta.</p></div>
+                    </div>
+                    <div x-show="shape === 'romboide'" x-cloak class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label class="field-label">Base (m)</label><input type="text" inputmode="decimal" x-model="romboide.base" x-decimal class="field-input"><p class="field-hint">Uno de los lados.</p></div>
+                        <div><label class="field-label">Altura (m)</label><input type="text" inputmode="decimal" x-model="romboide.altura" x-decimal class="field-input"><p class="field-hint">Separación perpendicular entre lados paralelos.</p></div>
+                    </div>
+                    <div x-show="shape === 'poligono'" x-cloak class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label class="field-label">Número de lados</label><input type="text" inputmode="numeric" x-model="poli.n" class="field-input"><p class="field-hint">Mínimo 3. Ej: 6 = hexágono.</p></div>
+                        <div><label class="field-label">Longitud del lado (m)</label><input type="text" inputmode="decimal" x-model="poli.lado" x-decimal class="field-input"><p class="field-hint">Todos los lados son iguales en un polígono regular.</p></div>
+                    </div>
+                    <div x-show="shape === 'sector'" x-cloak class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label class="field-label">Radio (m)</label><input type="text" inputmode="decimal" x-model="sector.radio" x-decimal class="field-input"><p class="field-hint">Distancia del centro al arco.</p></div>
+                        <div><label class="field-label">Ángulo (grados)</label><input type="text" inputmode="decimal" x-model="sector.angulo" x-decimal class="field-input"><p class="field-hint">Amplitud del sector. Ej: 90° = cuarto de círculo.</p></div>
+                    </div>
+                    <div x-show="shape === 'corona'" x-cloak class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label class="field-label">Radio exterior R (m)</label><input type="text" inputmode="decimal" x-model="corona.R" x-decimal class="field-input"><p class="field-hint">Del centro al borde exterior.</p></div>
+                        <div><label class="field-label">Radio interior r (m)</label><input type="text" inputmode="decimal" x-model="corona.r" x-decimal class="field-input"><p class="field-hint">Del centro al borde del agujero interior.</p></div>
+                    </div>
+                    <div x-show="shape === 'prisma'" x-cloak class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div><label class="field-label">Ancho a (m)</label><input type="text" inputmode="decimal" x-model="prisma.a" x-decimal class="field-input"><p class="field-hint">Lado horizontal.</p></div>
+                        <div><label class="field-label">Profundidad b (m)</label><input type="text" inputmode="decimal" x-model="prisma.b" x-decimal class="field-input"><p class="field-hint">Lado de fondo.</p></div>
+                        <div><label class="field-label">Alto c (m)</label><input type="text" inputmode="decimal" x-model="prisma.c" x-decimal class="field-input"><p class="field-hint">Altura vertical.</p></div>
+                    </div>
+                    <div x-show="shape === 'cilindro'" x-cloak class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label class="field-label">Radio (m)</label><input type="text" inputmode="decimal" x-model="cilindro.radio" x-decimal class="field-input"><p class="field-hint">Del centro al borde de la base.</p></div>
+                        <div><label class="field-label">Altura (m)</label><input type="text" inputmode="decimal" x-model="cilindro.altura" x-decimal class="field-input"><p class="field-hint">Distancia entre las dos bases.</p></div>
+                    </div>
+                    <div x-show="shape === 'cono'" x-cloak class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label class="field-label">Radio (m)</label><input type="text" inputmode="decimal" x-model="cono.radio" x-decimal class="field-input"><p class="field-hint">Del centro al borde de la base.</p></div>
+                        <div><label class="field-label">Altura (m)</label><input type="text" inputmode="decimal" x-model="cono.altura" x-decimal class="field-input"><p class="field-hint">Del centro de la base al vértice.</p></div>
+                    </div>
+                    <div x-show="shape === 'esfera'" x-cloak><label class="field-label">Radio (m)</label><input type="text" inputmode="decimal" x-model="esfera.radio" x-decimal class="field-input"><p class="field-hint">Del centro al borde de la esfera.</p></div>
+                    <div x-show="shape === 'piramide'" x-cloak class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label class="field-label">Lado de la base (m)</label><input type="text" inputmode="decimal" x-model="piramide.lado" x-decimal class="field-input"><p class="field-hint">Un lado del cuadrado de la base.</p></div>
+                        <div><label class="field-label">Altura (m)</label><input type="text" inputmode="decimal" x-model="piramide.altura" x-decimal class="field-input"><p class="field-hint">Del centro de la base al vértice superior.</p></div>
+                    </div>
+                </div>
+
+                <div class="mt-4 p-4 md:p-5 rounded-2xl border transition-colors"
+                    :class="hasResult ? 'bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/30 border-emerald-300 dark:border-emerald-800/60' : 'bg-slate-100/70 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700'">
+                    <p class="text-[10px] font-bold uppercase tracking-wider mb-3" :class="hasResult ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'">Resultado</p>
+                    <template x-if="!hasResult"><p class="text-slate-400 dark:text-slate-500 text-sm text-center py-2">Introduce las medidas para ver los resultados.</p></template>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <template x-if="resultados.area > 0"><div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-emerald-100 dark:border-emerald-900/50"><p class="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Área</p><p class="text-2xl font-bold text-slate-900 dark:text-white mt-1"><span x-text="resultados.area.toFixed(3)"></span> <span class="text-sm font-medium text-slate-400 dark:text-slate-500 ml-1">m²</span></p></div></template>
+                        <template x-if="resultados.perimetro > 0"><div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-emerald-100 dark:border-emerald-900/50"><p class="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Perímetro</p><p class="text-2xl font-bold text-slate-900 dark:text-white mt-1"><span x-text="resultados.perimetro.toFixed(3)"></span> <span class="text-sm font-medium text-slate-400 dark:text-slate-500 ml-1">m</span></p></div></template>
+                        <template x-if="resultados.volumen > 0"><div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-emerald-100 dark:border-emerald-900/50"><p class="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Volumen</p><p class="text-2xl font-bold text-slate-900 dark:text-white mt-1"><span x-text="resultados.volumen.toFixed(3)"></span> <span class="text-sm font-medium text-slate-400 dark:text-slate-500 ml-1">m³</span></p></div></template>
+                    </div>
+                    <template x-if="resultados.extra"><p class="text-xs text-slate-500 dark:text-slate-400 mt-3 pt-3 border-t border-emerald-200/70 dark:border-emerald-800/40" x-text="resultados.extra"></p></template>
+                </div>
+            </section>
+
+            <!-- ===================== ESCALAS ===================== -->
+            <section x-show="tab === 'escalas'" x-cloak
+                class="bg-white/80 dark:bg-slate-900/70 backdrop-blur rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-black/30 border border-slate-200/60 dark:border-slate-700/60 p-5 md:p-8"
+                x-data="{
+                    escalaOpcion: '50', escalaCustom: 100, unidadDibujo: 'cm', unidadReal: 'm', modo: 'dibujo', entrada: 0,
+                    get escala() { const e = this.escalaOpcion === 'custom' ? this.escalaCustom : this.escalaOpcion; const n = parseFloat(e); return n > 0 ? n : 1; },
+                    toM(valor, u) { const N = parseFloat(valor) || 0; if (u === 'mm') return N/1000; if (u === 'cm') return N/100; return N; },
+                    fromM(m, u) { if (u === 'mm') return m*1000; if (u === 'cm') return m*100; return m; },
+                    get entradaUnidad() { return this.modo === 'dibujo' ? this.unidadDibujo : this.unidadReal; },
+                    get valorDibujoDisplay() { const v = parseFloat(this.entrada) || 0; if (this.modo === 'dibujo') return v; return this.fromM(this.toM(v, this.unidadReal) / this.escala, this.unidadDibujo); },
+                    get valorRealDisplay() { const v = parseFloat(this.entrada) || 0; if (this.modo === 'real') return v; return this.fromM(this.toM(v, this.unidadDibujo) * this.escala, this.unidadReal); }
+                }">
+                <h2 class="text-xl font-bold mb-2 text-slate-800 dark:text-white">Conversor de escala</h2>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mb-5">Convierte entre lo que mides en un plano impreso y la medida real del objeto.</p>
+                <div class="mb-5 p-3 rounded-xl bg-violet-100/50 dark:bg-violet-950/30 border border-violet-200/70 dark:border-violet-800/50">
+                    <p class="text-xs text-violet-900 dark:text-violet-200 leading-relaxed">💡 <strong>Cómo funciona:</strong> Un plano a escala 1:50 significa que <strong>1 unidad en el papel representa 50 unidades en la realidad</strong>. Ej: 5 cm medidos con regla sobre un plano 1:50 equivalen a 250 cm = 2.5 m reales.</p>
+                </div>
+                <div class="p-5 rounded-2xl bg-violet-50/70 dark:bg-violet-950/20 border border-violet-200/60 dark:border-violet-800/40 space-y-4">
+                    <p class="text-[10px] font-bold uppercase tracking-wider text-violet-600 dark:text-violet-400">Configuración</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="field-label">Escala</label>
+                            <select x-model="escalaOpcion" class="field-input">
+                                <option value="1">1:1</option><option value="5">1:5</option><option value="10">1:10</option>
+                                <option value="20">1:20</option><option value="25">1:25</option><option value="50">1:50</option>
+                                <option value="75">1:75</option><option value="100">1:100</option><option value="200">1:200</option>
+                                <option value="500">1:500</option><option value="1000">1:1000</option>
+                                <option value="custom">Personalizada…</option>
+                            </select>
+                        </div>
+                        <div x-show="escalaOpcion === 'custom'" x-cloak>
+                            <label class="field-label">Valor (1 : X)</label>
+                            <input type="text" inputmode="decimal" x-model="escalaCustom" x-decimal class="field-input">
+                        </div>
+                        <div>
+                            <label class="field-label">Unidad del plano</label>
+                            <select x-model="unidadDibujo" class="field-input">
+                                <option value="mm">Milímetros (mm)</option><option value="cm">Centímetros (cm)</option><option value="m">Metros (m)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="field-label">Unidad real</label>
+                            <select x-model="unidadReal" class="field-input">
+                                <option value="mm">Milímetros (mm)</option><option value="cm">Centímetros (cm)</option><option value="m">Metros (m)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="field-label">¿Qué dato conoces?</label>
+                        <div class="inline-flex flex-wrap gap-1 mt-1 p-1 bg-white/70 dark:bg-slate-800/70 rounded-xl border border-violet-200/60 dark:border-violet-800/40">
+                            <button @click="modo = 'dibujo'" :class="modo === 'dibujo' ? 'bg-gradient-to-br from-violet-500 to-violet-600 text-white shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'" class="px-4 py-1.5 rounded-lg font-medium text-sm transition-all">Mido sobre el plano</button>
+                            <button @click="modo = 'real'" :class="modo === 'real' ? 'bg-gradient-to-br from-violet-500 to-violet-600 text-white shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'" class="px-4 py-1.5 rounded-lg font-medium text-sm transition-all">Sé la medida real</button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="field-label" x-text="'Valor de entrada (' + entradaUnidad + ')'"></label>
+                        <input type="text" inputmode="decimal" x-model="entrada" x-decimal class="field-input">
+                        <p class="field-hint" x-show="modo === 'dibujo'" x-cloak>Lo que obtienes al medir con una regla sobre el plano impreso.</p>
+                        <p class="field-hint" x-show="modo === 'real'" x-cloak>La medida que tiene el objeto en la realidad.</p>
+                    </div>
+                </div>
+                <div class="mt-4 p-4 md:p-5 rounded-2xl border bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/30 border-emerald-300 dark:border-emerald-800/60">
+                    <p class="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 mb-3">Conversión</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-emerald-100 dark:border-emerald-900/50"><p class="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">En el plano</p><p class="text-2xl font-bold text-slate-900 dark:text-white mt-1"><span x-text="valorDibujoDisplay.toFixed(3)"></span> <span class="text-sm font-medium text-slate-400 dark:text-slate-500 ml-1" x-text="unidadDibujo"></span></p></div>
+                        <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-emerald-100 dark:border-emerald-900/50"><p class="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">En la realidad</p><p class="text-2xl font-bold text-slate-900 dark:text-white mt-1"><span x-text="valorRealDisplay.toFixed(3)"></span> <span class="text-sm font-medium text-slate-400 dark:text-slate-500 ml-1" x-text="unidadReal"></span></p></div>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-3 pt-3 border-t border-emerald-200/70 dark:border-emerald-800/40">Escala aplicada: <strong class="text-slate-700 dark:text-slate-200">1:<span x-text="escala"></span></strong></p>
+                </div>
+            </section>
+
+            <!-- ===================== PENDIENTES ===================== -->
+            <section x-show="tab === 'pendientes'" x-cloak
+                class="bg-white/80 dark:bg-slate-900/70 backdrop-blur rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-black/30 border border-slate-200/60 dark:border-slate-700/60 p-5 md:p-8"
+                x-data="{
+                    modo: 'cd', caida: 0, distancia: 0, porcentaje: 0, angulo: 0,
+                    get resultados() {
+                        const N = v => parseFloat(v) || 0;
+                        const PI = Math.PI;
+                        let c = 0, d = 0, p = 0, a = 0, f = 0;
+                        if (this.modo === 'cd') { c = N(this.caida); d = N(this.distancia); if (d > 0) { p = (c/d)*100; a = Math.atan(c/d)*180/PI; f = Math.sqrt(c*c + d*d); } }
+                        else if (this.modo === 'porcentaje') { p = N(this.porcentaje); d = N(this.distancia); if (d > 0 && p !== 0) { c = (p/100)*d; a = Math.atan(p/100)*180/PI; f = Math.sqrt(c*c + d*d); } }
+                        else if (this.modo === 'angulo') { a = N(this.angulo); d = N(this.distancia); if (d > 0 && a !== 0) { c = Math.tan(a*PI/180)*d; p = (c/d)*100; f = Math.sqrt(c*c + d*d); } }
+                        return { caida: c, distancia: d, porcentaje: p, angulo: a, faldon: f, ratio: p > 0 ? (100/p).toFixed(2) : '—' };
+                    }
+                }">
+                <h2 class="text-xl font-bold mb-2 text-slate-800 dark:text-white">Calculadora de pendientes</h2>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mb-5">Calcula inclinaciones de rampas, cubiertas y desagües a partir de cualquier combinación de datos.</p>
+                <div class="mb-5 p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700">
+                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">Esquema de referencia</p>
+                    <div class="flex flex-col md:flex-row items-center gap-4">
+                        <svg viewBox="0 0 240 110" class="w-full max-w-[260px] text-slate-600 dark:text-slate-300">
+                            <line x1="30" y1="80" x2="200" y2="80" stroke="currentColor" stroke-width="2"/>
+                            <line x1="200" y1="80" x2="200" y2="20" stroke="currentColor" stroke-width="2"/>
+                            <line x1="30" y1="80" x2="200" y2="20" stroke="currentColor" stroke-width="2" stroke-dasharray="4 3" opacity="0.7"/>
+                            <path d="M 50 80 A 20 20 0 0 0 46 68" stroke="#f59e0b" stroke-width="2" fill="none"/>
+                            <text x="115" y="100" text-anchor="middle" font-size="11" fill="currentColor">distancia</text>
+                            <text x="212" y="55" font-size="11" fill="currentColor">caída</text>
+                            <text x="90" y="42" font-size="11" fill="#f59e0b">faldón</text>
+                        </svg>
+                        <ul class="text-xs text-slate-600 dark:text-slate-400 space-y-1.5">
+                            <li><strong class="text-slate-800 dark:text-slate-200">Caída:</strong> cuánto sube o baja en vertical.</li>
+                            <li><strong class="text-slate-800 dark:text-slate-200">Distancia:</strong> cuánto avanza en horizontal.</li>
+                            <li><strong class="text-slate-800 dark:text-slate-200">Faldón:</strong> longitud real sobre la pendiente.</li>
+                            <li><strong class="text-slate-800 dark:text-slate-200">Pendiente %:</strong> caída ÷ distancia × 100.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="p-5 rounded-2xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-800/40 space-y-4">
+                    <p class="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">Modo de cálculo</p>
+                    <div class="inline-flex flex-wrap gap-1 p-1 bg-white/70 dark:bg-slate-800/70 rounded-xl border border-amber-200/60 dark:border-amber-800/40">
+                        <button @click="modo = 'cd'" :class="modo === 'cd' ? 'bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'" class="px-4 py-1.5 rounded-lg font-medium text-sm transition-all">Caída + distancia</button>
+                        <button @click="modo = 'porcentaje'" :class="modo === 'porcentaje' ? 'bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'" class="px-4 py-1.5 rounded-lg font-medium text-sm transition-all">Pendiente %</button>
+                        <button @click="modo = 'angulo'" :class="modo === 'angulo' ? 'bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'" class="px-4 py-1.5 rounded-lg font-medium text-sm transition-all">Ángulo</button>
+                    </div>
+                    <div x-show="modo === 'cd'" x-cloak class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label class="field-label">Caída vertical (m)</label><input type="text" inputmode="decimal" x-model="caida" x-decimal class="field-input"><p class="field-hint">Desnivel vertical total (altura ganada o perdida).</p></div>
+                        <div><label class="field-label">Distancia horizontal (m)</label><input type="text" inputmode="decimal" x-model="distancia" x-decimal class="field-input"><p class="field-hint">Recorrido horizontal, no la longitud sobre la pendiente.</p></div>
+                    </div>
+                    <div x-show="modo === 'porcentaje'" x-cloak class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label class="field-label">Pendiente (%)</label><input type="text" inputmode="decimal" x-model="porcentaje" x-decimal class="field-input"><p class="field-hint">Ej: 10 = 10 % = 0.10 m de caída por metro horizontal.</p></div>
+                        <div><label class="field-label">Distancia horizontal (m)</label><input type="text" inputmode="decimal" x-model="distancia" x-decimal class="field-input"><p class="field-hint">Recorrido horizontal al que se aplica la pendiente.</p></div>
+                    </div>
+                    <div x-show="modo === 'angulo'" x-cloak class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label class="field-label">Ángulo (grados)</label><input type="text" inputmode="decimal" x-model="angulo" x-decimal class="field-input"><p class="field-hint">Inclinación respecto a la horizontal (0° = plano).</p></div>
+                        <div><label class="field-label">Distancia horizontal (m)</label><input type="text" inputmode="decimal" x-model="distancia" x-decimal class="field-input"><p class="field-hint">Recorrido horizontal al que se aplica el ángulo.</p></div>
+                    </div>
+                </div>
+                <div class="mt-4 p-4 md:p-5 rounded-2xl border bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/30 border-emerald-300 dark:border-emerald-800/60">
+                    <p class="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 mb-3">Resultados</p>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        <div class="bg-white dark:bg-slate-900 rounded-xl p-3 border border-emerald-100 dark:border-emerald-900/50"><p class="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Caída</p><p class="text-xl font-bold text-slate-900 dark:text-white mt-1"><span x-text="resultados.caida.toFixed(3)"></span> <span class="text-xs font-medium text-slate-400 dark:text-slate-500">m</span></p></div>
+                        <div class="bg-white dark:bg-slate-900 rounded-xl p-3 border border-emerald-100 dark:border-emerald-900/50"><p class="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Distancia</p><p class="text-xl font-bold text-slate-900 dark:text-white mt-1"><span x-text="resultados.distancia.toFixed(3)"></span> <span class="text-xs font-medium text-slate-400 dark:text-slate-500">m</span></p></div>
+                        <div class="bg-white dark:bg-slate-900 rounded-xl p-3 border border-emerald-100 dark:border-emerald-900/50"><p class="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Pendiente</p><p class="text-xl font-bold text-slate-900 dark:text-white mt-1"><span x-text="resultados.porcentaje.toFixed(2)"></span> <span class="text-xs font-medium text-slate-400 dark:text-slate-500">%</span></p></div>
+                        <div class="bg-white dark:bg-slate-900 rounded-xl p-3 border border-emerald-100 dark:border-emerald-900/50"><p class="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Ángulo</p><p class="text-xl font-bold text-slate-900 dark:text-white mt-1"><span x-text="resultados.angulo.toFixed(2)"></span> <span class="text-xs font-medium text-slate-400 dark:text-slate-500">°</span></p></div>
+                        <div class="bg-white dark:bg-slate-900 rounded-xl p-3 border border-emerald-100 dark:border-emerald-900/50"><p class="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Faldón</p><p class="text-xl font-bold text-slate-900 dark:text-white mt-1"><span x-text="resultados.faldon.toFixed(3)"></span> <span class="text-xs font-medium text-slate-400 dark:text-slate-500">m</span></p></div>
+                        <div class="bg-white dark:bg-slate-900 rounded-xl p-3 border border-emerald-100 dark:border-emerald-900/50"><p class="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Ratio</p><p class="text-xl font-bold text-slate-900 dark:text-white mt-1">1:<span x-text="resultados.ratio"></span></p></div>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-3 pt-3 border-t border-emerald-200/70 dark:border-emerald-800/40 leading-relaxed">💡 Rampas accesibles: 6–8 % · Cubiertas inclinadas: 20–40 % · Desagües: 1–2 % · Escaleras: ~30–35°.</p>
+                </div>
+            </section>
+
+            <!-- ===================== ILUMINACIÓN ===================== -->
+            <section x-show="tab === 'iluminacion'" x-cloak
+                class="bg-white/80 dark:bg-slate-900/70 backdrop-blur rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-black/30 border border-slate-200/60 dark:border-slate-700/60 p-5 md:p-8"
+                x-data="{
+                    tipo: 'oficina', area: 0, lumenesPorLuminaria: 800,
+                    tipos: {
+                        pasillo: { nombre: 'Pasillo / circulación', lux: 100 }, escaleras: { nombre: 'Escaleras', lux: 150 },
+                        vestibulo: { nombre: 'Vestíbulo de entrada', lux: 100 }, sala_estar: { nombre: 'Sala de estar', lux: 200 },
+                        comedor: { nombre: 'Comedor', lux: 200 }, bano: { nombre: 'Baño / aseo', lux: 200 },
+                        oficina: { nombre: 'Oficina (escritura/lectura)', lux: 500 }, dibujo_tecnico: { nombre: 'Dibujo técnico', lux: 750 },
+                        cad: { nombre: 'Estación de trabajo CAD', lux: 500 }, sala_reuniones: { nombre: 'Sala de reuniones', lux: 500 },
+                        archivo: { nombre: 'Archivo / copiado', lux: 300 }, descanso: { nombre: 'Área de descanso', lux: 100 },
+                        ejercicio: { nombre: 'Sala de ejercicio', lux: 300 }, enfermeria: { nombre: 'Enfermería / atención médica', lux: 500 }
+                    },
+                    get luxRecomendado() { return this.tipos[this.tipo].lux; },
+                    get lumenesTotales() { return (parseFloat(this.area) || 0) * this.luxRecomendado; },
+                    get numeroLuminarias() { const lum = parseFloat(this.lumenesPorLuminaria) || 1; return this.lumenesTotales > 0 ? Math.ceil(this.lumenesTotales / lum) : 0; },
+                    get consumoEstimado() { return (this.lumenesTotales / 1000) * 10; }
+                }">
+                <h2 class="text-xl font-bold mb-2 text-slate-800 dark:text-white">Calculadora de iluminación</h2>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mb-5">Estima los lúmenes necesarios y el número de luminarias para un espacio según su uso.</p>
+                <div class="mb-5 p-3 rounded-xl bg-emerald-100/50 dark:bg-emerald-950/30 border border-emerald-200/70 dark:border-emerald-800/50">
+    <p class="text-xs text-emerald-900 dark:text-emerald-200 leading-relaxed">💡 <strong>Referencia:</strong> Los niveles de lux recomendados se basan en la norma <strong>INTE/ISO 8995-1:2016</strong> (Iluminación de los lugares de trabajo. Parte 1: Interiores). 1 lux = 1 lumen por metro cuadrado.</p>
+</div>
+                <div class="p-5 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-800/40 space-y-4">
+                    <p class="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Datos del espacio</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="field-label">Tipo de espacio</label>
+                            <select x-model="tipo" class="field-input">
+                                <template x-for="(t, key) in tipos" :key="key"><option :value="key" x-text="t.nombre + ' (' + t.lux + ' lux)'"></option></template>
+                            </select>
+                            <p class="field-hint">Selecciona el uso principal del espacio.</p>
+                        </div>
+                        <div>
+                            <label class="field-label">Superficie (m²)</label>
+                            <input type="text" inputmode="decimal" x-model="area" x-decimal class="field-input">
+                            <p class="field-hint">Área del suelo del espacio a iluminar.</p>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="field-label">Lúmenes por luminaria (lm)</label>
+                        <input type="text" inputmode="decimal" x-model="lumenesPorLuminaria" x-decimal class="field-input">
+                        <p class="field-hint">Valor típico: 800 lm para una bombilla LED estándar.</p>
+                    </div>
+                </div>
+                <div class="mt-4 p-4 md:p-5 rounded-2xl border bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/30 border-emerald-300 dark:border-emerald-800/60">
+                    <p class="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 mb-3">Resultados</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-emerald-100 dark:border-emerald-900/50"><p class="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Lúmenes necesarios</p><p class="text-2xl font-bold text-slate-900 dark:text-white mt-1"><span x-text="lumenesTotales.toFixed(0)"></span> <span class="text-sm font-medium text-slate-400 dark:text-slate-500 ml-1">lm</span></p></div>
+                        <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-emerald-100 dark:border-emerald-900/50"><p class="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Nº de luminarias</p><p class="text-2xl font-bold text-slate-900 dark:text-white mt-1"><span x-text="numeroLuminarias"></span></p></div>
+                        <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-emerald-100 dark:border-emerald-900/50"><p class="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Consumo estimado</p><p class="text-2xl font-bold text-slate-900 dark:text-white mt-1"><span x-text="consumoEstimado.toFixed(0)"></span> <span class="text-sm font-medium text-slate-400 dark:text-slate-500 ml-1">W</span></p></div>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-3 pt-3 border-t border-emerald-200/70 dark:border-emerald-800/40">💡 El consumo es una estimación para tecnología LED (≈10 W por cada 1000 lm).</p>
+                </div>
+            </section>
+
+            <!-- ===================== MATERIALES ===================== -->
+            <section x-show="tab === 'materiales'" x-cloak
+                class="bg-white/80 dark:bg-slate-900/70 backdrop-blur rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-black/30 border border-slate-200/60 dark:border-slate-700/60 p-5 md:p-8"
+                x-data="{
+                    largoLadrillo: 0.24, altoLadrillo: 0.09, espesorJunta: 0.015, areaMuro: 0,
+                    get areaLadrilloConJunta() { return (parseFloat(this.largoLadrillo) + parseFloat(this.espesorJunta)) * (parseFloat(this.altoLadrillo) + parseFloat(this.espesorJunta)); },
+                    get ladrillosPorM2() { const a = this.areaLadrilloConJunta; return a > 0 ? 1/a : 0; },
+                    get ladrillosTotales() { return this.ladrillosPorM2 * (parseFloat(this.areaMuro) || 0); },
+                    get ladrillosConDesperdicio() { return this.ladrillosTotales * 1.05; },
+                    get morteroPorM2() { const e = 0.13; const vLadrillos = this.ladrillosPorM2 * (parseFloat(this.largoLadrillo) * parseFloat(this.altoLadrillo) * 0.09); return Math.max(0, (1 * e) - vLadrillos); },
+                    get morteroTotal() { return this.morteroPorM2 * (parseFloat(this.areaMuro) || 0); },
+                    get cementoTotal() { return this.morteroTotal * 7.4; },
+                    get arenaTotal() { return this.morteroTotal * 1.05; }
+                }">
+                <h2 class="text-xl font-bold mb-2 text-slate-800 dark:text-white">Calculadora de materiales para muro</h2>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mb-5">Estima ladrillos, mortero, cemento y arena para un muro de ladrillo.</p>
+                <div class="mb-5 p-3 rounded-xl bg-rose-100/50 dark:bg-rose-950/30 border border-rose-200/70 dark:border-rose-800/50">
+                    <p class="text-xs text-rose-900 dark:text-rose-200 leading-relaxed">💡 <strong>Basado en:</strong> Fórmula de cantidad de ladrillos por m² de muro (Aceros Arequipa). Los cálculos incluyen un 5 % de desperdicio por rotura.</p>
+                </div>
+                <div class="p-5 rounded-2xl bg-rose-50/70 dark:bg-rose-950/20 border border-rose-200/60 dark:border-rose-800/40 space-y-4">
+                    <p class="text-[10px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">Datos del muro y del ladrillo</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div><label class="field-label">Largo del ladrillo (m)</label><input type="text" inputmode="decimal" x-model="largoLadrillo" x-decimal class="field-input"><p class="field-hint">Ej: 0.24 m para ladrillo King Kong.</p></div>
+                        <div><label class="field-label">Alto del ladrillo (m)</label><input type="text" inputmode="decimal" x-model="altoLadrillo" x-decimal class="field-input"><p class="field-hint">Ej: 0.09 m para ladrillo King Kong.</p></div>
+                        <div><label class="field-label">Espesor de junta (m)</label><input type="text" inputmode="decimal" x-model="espesorJunta" x-decimal class="field-input"><p class="field-hint">Típico: 0.015 m (1.5 cm).</p></div>
+                    </div>
+                    <div><label class="field-label">Área del muro (m²)</label><input type="text" inputmode="decimal" x-model="areaMuro" x-decimal class="field-input"><p class="field-hint">Superficie total del muro a construir.</p></div>
+                </div>
+                <div class="mt-4 p-4 md:p-5 rounded-2xl border bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/30 border-emerald-300 dark:border-emerald-800/60">
+                    <p class="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 mb-3">Resultados</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                        <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-emerald-100 dark:border-emerald-900/50"><p class="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Ladrillos (5 % desp.)</p><p class="text-2xl font-bold text-slate-900 dark:text-white mt-1"><span x-text="ladrillosConDesperdicio.toFixed(0)"></span></p></div>
+                        <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-emerald-100 dark:border-emerald-900/50"><p class="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Mortero</p><p class="text-2xl font-bold text-slate-900 dark:text-white mt-1"><span x-text="morteroTotal.toFixed(2)"></span> <span class="text-sm font-medium text-slate-400 dark:text-slate-500 ml-1">m³</span></p></div>
+                        <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-emerald-100 dark:border-emerald-900/50"><p class="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Cemento</p><p class="text-2xl font-bold text-slate-900 dark:text-white mt-1"><span x-text="cementoTotal.toFixed(1)"></span> <span class="text-sm font-medium text-slate-400 dark:text-slate-500 ml-1">sacos 50 kg</span></p></div>
+                        <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-emerald-100 dark:border-emerald-900/50"><p class="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Arena</p><p class="text-2xl font-bold text-slate-900 dark:text-white mt-1"><span x-text="arenaTotal.toFixed(2)"></span> <span class="text-sm font-medium text-slate-400 dark:text-slate-500 ml-1">m³</span></p></div>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-3 pt-3 border-t border-emerald-200/70 dark:border-emerald-800/40">💡 Proporción de mortero asumida: 1 parte de cemento por 5 de arena. Los valores son estimativos.</p>
+                </div>
+            </section>
+
+            <!-- ===================== UNIDADES ===================== -->
+            <section x-show="tab === 'unidades'" x-cloak
+                class="bg-white/80 dark:bg-slate-900/70 backdrop-blur rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-black/30 border border-slate-200/60 dark:border-slate-700/60 p-5 md:p-8"
+                x-data="{
+                    categoria: 'longitud', valor: 1, unidadOrigen: 'm', unidadDestino: 'ft',
+                    categorias: {
+                        longitud: { nombre: 'Longitud', unidades: { m: 'Metro', cm: 'Centímetro', mm: 'Milímetro', in: 'Pulgada', ft: 'Pie', yd: 'Yarda' }, factores: { m: 1, cm: 100, mm: 1000, in: 39.3701, ft: 3.28084, yd: 1.09361 } },
+                        masa: { nombre: 'Masa', unidades: { kg: 'Kilogramo', g: 'Gramo', lb: 'Libra', oz: 'Onza' }, factores: { kg: 1, g: 1000, lb: 2.20462, oz: 35.274 } },
+                        densidad: { nombre: 'Densidad', unidades: { 'kg/m3': 'kg/m³', 'lb/ft3': 'lb/ft³', 'g/cm3': 'g/cm³' }, factores: { 'kg/m3': 1, 'lb/ft3': 0.06243, 'g/cm3': 0.001 } },
+                        fuerza: { nombre: 'Fuerza', unidades: { N: 'Newton', kN: 'Kilonewton', lbf: 'Libra-fuerza', kgf: 'Kilogramo-fuerza' }, factores: { N: 1, kN: 0.001, lbf: 0.2248, kgf: 0.10197 } },
+                        presion: { nombre: 'Presión', unidades: { Pa: 'Pascal', kPa: 'Kilopascal', MPa: 'Megapascal', psi: 'PSI', bar: 'Bar' }, factores: { Pa: 1, kPa: 0.001, MPa: 0.000001, psi: 0.000145038, bar: 0.00001 } }
+                    },
+                    get unidadesDisponibles() { return this.categorias[this.categoria].unidades; },
+                    get factores() { return this.categorias[this.categoria].factores; },
+                    get resultado() { const v = parseFloat(this.valor) || 0; const origen = this.factores[this.unidadOrigen] || 1; const destino = this.factores[this.unidadDestino] || 1; return (v / origen) * destino; }
+                }">
+                <h2 class="text-xl font-bold mb-2 text-slate-800 dark:text-white">Conversor de unidades técnicas</h2>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mb-5">Convierte entre sistema métrico e imperial para magnitudes de ingeniería y arquitectura.</p>
+                <div class="mb-5 p-3 rounded-xl bg-cyan-100/50 dark:bg-cyan-950/30 border border-cyan-200/70 dark:border-cyan-800/50">
+                    <p class="text-xs text-cyan-900 dark:text-cyan-200 leading-relaxed">💡 <strong>Factores de conversión</strong> basados en tablas de ingeniería estándar.</p>
+                </div>
+                <div class="p-5 rounded-2xl bg-cyan-50/70 dark:bg-cyan-950/20 border border-cyan-200/60 dark:border-cyan-800/40 space-y-4">
+                    <p class="text-[10px] font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">Configuración</p>
+                    <div>
+                        <label class="field-label">Categoría</label>
+                        <select x-model="categoria" @change="unidadOrigen = Object.keys(unidadesDisponibles)[0]; unidadDestino = Object.keys(unidadesDisponibles)[1]" class="field-input">
+                            <template x-for="(cat, key) in categorias" :key="key"><option :value="key" x-text="cat.nombre"></option></template>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div><label class="field-label">Valor</label><input type="text" inputmode="decimal" x-model="valor" x-decimal class="field-input"></div>
+                        <div>
+                            <label class="field-label">De</label>
+                            <select x-model="unidadOrigen" class="field-input">
+                                <template x-for="(nombre, key) in unidadesDisponibles" :key="key"><option :value="key" x-text="nombre"></option></template>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="field-label">A</label>
+                            <select x-model="unidadDestino" class="field-input">
+                                <template x-for="(nombre, key) in unidadesDisponibles" :key="key"><option :value="key" x-text="nombre"></option></template>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4 p-4 md:p-5 rounded-2xl border bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/30 border-emerald-300 dark:border-emerald-800/60">
+                    <p class="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 mb-3">Resultado</p>
+                    <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-emerald-100 dark:border-emerald-900/50">
+                        <p class="text-3xl font-bold text-slate-900 dark:text-white"><span x-text="resultado.toFixed(6).replace(/\.?0+$/, '')"></span> <span class="text-lg font-medium text-slate-400 dark:text-slate-500 ml-1" x-text="unidadDestino"></span></p>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-3 pt-3 border-t border-emerald-200/70 dark:border-emerald-800/40"><span x-text="valor"></span> <span x-text="unidadOrigen"></span> = <span x-text="resultado.toFixed(6).replace(/\.?0+$/, '')"></span> <span x-text="unidadDestino"></span></p>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer con créditos -->
+        <footer class="mt-12 pt-6 border-t border-slate-200/80 dark:border-slate-700">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+        <p class="text-xs text-slate-600">
+            Diseñado por <span class="font-semibold text-slate-900">Harrison Umaña</span>
+        </p>
+        <p class="font-mono text-[11px] uppercase tracking-[0.14em] text-slate-500">
+            Área de Arquitectura · UEN PyC · Acueductos y Alcantarillados · 2026
+        </p>
+    </div>
+</footer>
+    </div>
+
+</body>
+</html>
